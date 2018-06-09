@@ -8,7 +8,7 @@
 #include <elf.h>
 
 #define BUFFER_SIZE 100
-#define OPTIONS_NUM 2
+#define OPTIONS_NUM 3
 #define CLOSE_ELF                        \
     close(Currentfd);                    \
     munmap(map_start, fd_stat.st_size);  \
@@ -70,6 +70,20 @@ void examine_elf_file(){
     printf("\n");
 }
 
+void print_sections(){
+    if (-1 == Currentfd){
+        printf("Invalid file\n\n");
+        return;
+    }
+    Elf64_Ehdr *header = (Elf64_Ehdr *) map_start;
+    Elf64_Shdr *sh_table = (Elf64_Shdr *) (map_start + header->e_shoff);
+    char *shstrtab = (char *)header + sh_table[header->e_shstrndx].sh_offset;
+    for (int i = 0; i < header->e_shnum; i++){
+        Elf64_Shdr s = sh_table[i];
+        printf("[%d] %s %p %lu %lu %d\n", i, shstrtab + s.sh_name, (void *)s.sh_addr, s.sh_offset, s.sh_size, s.sh_type);
+    }
+    printf("\n");
+}
 
 void quit(){
     CLOSE_ELF;
@@ -82,7 +96,7 @@ typedef struct Option {
 } Option;
 
 int main(int argc, char **argv){
-    Option menu[OPTIONS_NUM] = {{"1-Examine ELF File\n", &examine_elf_file}, {"2-Quit\n", &quit}};
+    Option menu[OPTIONS_NUM] = {{"1-Examine ELF File\n", &examine_elf_file}, {"2-Print Section Names\n", &print_sections}, {"3-Quit\n", &quit}};
     while (1){
         for (int i = 0; i < OPTIONS_NUM; i++){
             printf("%s", menu[i].name);
